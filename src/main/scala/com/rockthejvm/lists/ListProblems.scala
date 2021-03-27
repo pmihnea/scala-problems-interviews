@@ -4,22 +4,30 @@ import scala.annotation.tailrec
 
 sealed abstract class RList[+T] {
   def head: T
+
   def tail: RList[T]
+
   def isEmpty: Boolean
 
   def ::[S >: T](elem: S): RList[S] = new ::(elem, this)
 
   def apply(index: Int): T
+
+  def length: Int
 }
 
 case object RNil extends RList[Nothing] {
   override def head: Nothing = throw new NoSuchElementException
+
   override def tail: RList[Nothing] = throw new NoSuchElementException
+
   override def isEmpty: Boolean = true
 
   override def toString: String = "[]"
 
   override def apply(index: Int): Nothing = throw new NoSuchElementException
+
+  override def length: Int = 0
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -38,26 +46,31 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
   override def apply(index: Int): T = {
     @tailrec def getKthElem(k: Int, remaining: RList[T]): T = {
-      if(k == index) remaining.head
-      else getKthElem(k+1, remaining.tail)
+      if (k == index) remaining.head
+      else getKthElem(k + 1, remaining.tail)
     }
-    if(index < 0) throw new NoSuchElementException
+
+    if (index < 0) throw new NoSuchElementException
     else getKthElem(0, this)
   }
+
+
+  override def length: Int = {
+    @tailrec
+    def lengthRec(remaining: RList[T], acc: Int): Int = {
+      if (remaining.isEmpty) acc
+      else lengthRec(remaining.tail, acc + 1)
+    }
+
+    lengthRec(this, 0);
+  }
+
 }
 
 object ListProblems extends App {
 
   val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
   println(aSmallList)
-  println("getKthElem(0)=" + aSmallList(0))
-  println("getKthElem(1)=" + aSmallList(1))
-  println("getKthElem(2)=" + aSmallList(2))
-  println("getKthElem(3)=" +  {
-    try {
-      aSmallList(3)
-    }catch {
-      case e: Exception => "Not found"
-    }
-  })
+  println("length=" + aSmallList.length)
+
 }
