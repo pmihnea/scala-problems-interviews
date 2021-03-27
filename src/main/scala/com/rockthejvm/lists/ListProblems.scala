@@ -79,10 +79,22 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 }
 
+object RList {
+  def from[T](iterable: Iterable[T]): RList[T] = {
+    def fromRec(iterable: Iterable[T], acc: RList[T]): RList[T] = {
+      if (iterable.isEmpty) acc
+      else fromRec(iterable.tail, iterable.head :: acc)
+    }
+    fromRec(iterable, RNil).reverse
+  }
+}
+
 object ListProblems extends App {
 
-  val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
-  println(aSmallList)
-  println("reverse=" + aSmallList.reverse)
-
+  //val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
+  val aLargeList = RList.from(1 to 10000)
+  println(aLargeList)
+  println("8765th=" + aLargeList(8765))
+  println("length=" + aLargeList.length)
+  println("reverse=" + aLargeList.reverse)
 }
