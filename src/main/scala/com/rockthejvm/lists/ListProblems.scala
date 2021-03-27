@@ -16,6 +16,8 @@ sealed abstract class RList[+T] {
   def length: Int
 
   def reverse: RList[T]
+
+  def ++[S >: T](anotherList: RList[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -32,6 +34,8 @@ case object RNil extends RList[Nothing] {
   override def length: Int = 0
 
   override def reverse: RList[Nothing] = this
+
+  override def ++[S >: Nothing](anotherList: RList[S]): RList[S] = anotherList
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -77,6 +81,15 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     reverseRec(this, RNil)
   }
+
+  override def ++[S >: T](anotherList: RList[S]): RList[S] = {
+    @tailrec
+    def appendRec(remaining: RList[S], acc: RList[S]): RList[S] = {
+      if(remaining.isEmpty) acc
+      else appendRec(remaining.tail, remaining.head :: acc)
+    }
+    appendRec(this.reverse, anotherList)
+  }
 }
 
 object RList {
@@ -94,7 +107,9 @@ object ListProblems extends App {
   //val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
   val aLargeList = RList.from(1 to 10000)
   println(aLargeList)
-  println("8765th=" + aLargeList(8765))
+  println("8th=" + aLargeList(8))
   println("length=" + aLargeList.length)
   println("reverse=" + aLargeList.reverse)
+  val anotherList = RList.from(11 to 10000)
+  println("append=" + (aLargeList ++ anotherList))
 }
