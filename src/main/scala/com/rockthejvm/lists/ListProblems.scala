@@ -18,6 +18,8 @@ sealed abstract class RList[+T] {
   def reverse: RList[T]
 
   def ++[S >: T](anotherList: RList[S]): RList[S]
+
+  def removeAt(index: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -36,6 +38,8 @@ case object RNil extends RList[Nothing] {
   override def reverse: RList[Nothing] = this
 
   override def ++[S >: Nothing](anotherList: RList[S]): RList[S] = anotherList
+
+  override def removeAt(index: Int): RList[Nothing] = this
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -82,13 +86,29 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     reverseRec(this, RNil)
   }
 
+  @tailrec
+  private def appendRec[S >: T](remaining: RList[S], acc: RList[S]): RList[S] = {
+    if (remaining.isEmpty) acc
+    else appendRec(remaining.tail, remaining.head :: acc)
+  }
+
   override def ++[S >: T](anotherList: RList[S]): RList[S] = {
-    @tailrec
-    def appendRec(remaining: RList[S], acc: RList[S]): RList[S] = {
-      if(remaining.isEmpty) acc
-      else appendRec(remaining.tail, remaining.head :: acc)
-    }
     appendRec(this.reverse, anotherList)
+  }
+
+  override def removeAt(index: Int): RList[T] = {
+    @tailrec
+    def removeAtRec[S >: T](remaining: RList[S], accReversed: RList[S], currentIndex: Int): RList[S] = {
+      if(currentIndex == index){
+        if(remaining.isEmpty) this
+        else appendRec(accReversed, remaining.tail)
+      }else{
+        if(remaining.isEmpty) this
+        else removeAtRec(remaining.tail, remaining.head :: accReversed, currentIndex + 1)
+      }
+    }
+    if(index < 0) this
+    else removeAtRec(this, RNil, 0)
   }
 }
 
@@ -98,6 +118,7 @@ object RList {
       if (iterable.isEmpty) acc
       else fromRec(iterable.tail, iterable.head :: acc)
     }
+
     fromRec(iterable, RNil).reverse
   }
 }
@@ -105,11 +126,13 @@ object RList {
 object ListProblems extends App {
 
   //val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
-  val aLargeList = RList.from(1 to 10000)
+  val aLargeList = RList.from(1 to 10)
   println(aLargeList)
   println("8th=" + aLargeList(8))
   println("length=" + aLargeList.length)
   println("reverse=" + aLargeList.reverse)
-  val anotherList = RList.from(11 to 10000)
-  println("append=" + (aLargeList ++ anotherList))
+  println("removeAt(5)=" + aLargeList.removeAt(5))
+  println("removeAt(0)=" + aLargeList.removeAt(0))
+  println("removeAt(100)=" + aLargeList.removeAt(100))
+  println("removeAt(-1)=" + aLargeList.removeAt(-1))
 }
