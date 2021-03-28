@@ -20,6 +20,12 @@ sealed abstract class RList[+T] {
   def ++[S >: T](anotherList: RList[S]): RList[S]
 
   def removeAt(index: Int): RList[T]
+
+  def map[S](f: T => S): RList[S]
+
+  def flatMap[S](f: T => RList[S]): RList[S]
+
+  def filter(f: T => Boolean): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -35,11 +41,17 @@ case object RNil extends RList[Nothing] {
 
   override def length: Int = 0
 
-  override def reverse: RList[Nothing] = this
+  override def reverse: RList[Nothing] = RNil
 
   override def ++[S >: Nothing](anotherList: RList[S]): RList[S] = anotherList
 
-  override def removeAt(index: Int): RList[Nothing] = this
+  override def removeAt(index: Int): RList[Nothing] = RNil
+
+  override def map[S](f: Nothing => S): RList[S] = RNil
+
+  override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
+
+  override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -87,28 +99,60 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 
   @tailrec
-  private def appendRec[S >: T](remaining: RList[S], acc: RList[S]): RList[S] = {
+  private def appendReversedRec[S](remaining: RList[S], acc: RList[S]): RList[S] = {
     if (remaining.isEmpty) acc
-    else appendRec(remaining.tail, remaining.head :: acc)
+    else appendReversedRec(remaining.tail, remaining.head :: acc)
   }
 
   override def ++[S >: T](anotherList: RList[S]): RList[S] = {
-    appendRec(this.reverse, anotherList)
+    appendReversedRec(this.reverse, anotherList)
   }
 
   override def removeAt(index: Int): RList[T] = {
     @tailrec
     def removeAtRec[S >: T](remaining: RList[S], accReversed: RList[S], currentIndex: Int): RList[S] = {
-      if(currentIndex == index){
-        if(remaining.isEmpty) this
-        else appendRec(accReversed, remaining.tail)
-      }else{
-        if(remaining.isEmpty) this
+      if (currentIndex == index) {
+        if (remaining.isEmpty) this
+        else appendReversedRec(accReversed, remaining.tail)
+      } else {
+        if (remaining.isEmpty) this
         else removeAtRec(remaining.tail, remaining.head :: accReversed, currentIndex + 1)
       }
     }
-    if(index < 0) this
+
+    if (index < 0) this
     else removeAtRec(this, RNil, 0)
+  }
+
+  override def map[S](f: T => S): RList[S] = {
+    @tailrec
+    def mapRec(remaining: RList[T], acc: RList[S]): RList[S] = {
+      if (remaining.isEmpty) acc.reverse
+      else mapRec(remaining.tail, f(remaining.head) :: acc)
+    }
+
+    mapRec(this, RNil)
+  }
+
+  override def flatMap[S](f: T => RList[S]): RList[S] = {
+    @tailrec
+    def flatMapRec(remaining: RList[T], acc: RList[S]): RList[S] = {
+      if (remaining.isEmpty) acc.reverse
+      else flatMapRec(remaining.tail, appendReversedRec[S](f(remaining.head), acc))
+    }
+
+    flatMapRec(this, RNil)
+  }
+
+  override def filter(f: T => Boolean): RList[T] = {
+    @tailrec
+    def filterRec(remaining: RList[T], accReversed: RList[T]): RList[T] = {
+      if (remaining.isEmpty) accReversed.reverse
+      else if (f(remaining.head)) filterRec(remaining.tail, remaining.head :: accReversed)
+      else filterRec(remaining.tail, accReversed)
+    }
+
+    filterRec(this, RNil)
   }
 }
 
@@ -125,14 +169,11 @@ object RList {
 
 object ListProblems extends App {
 
-  //val aSmallList = 1 :: 2 :: 3 :: RNil // RNil.::(3).::(2).::(1)
   val aLargeList = RList.from(1 to 10)
+  val anotherList = RList.from(11 to 15)
   println(aLargeList)
-  println("8th=" + aLargeList(8))
-  println("length=" + aLargeList.length)
-  println("reverse=" + aLargeList.reverse)
-  println("removeAt(5)=" + aLargeList.removeAt(5))
-  println("removeAt(0)=" + aLargeList.removeAt(0))
-  println("removeAt(100)=" + aLargeList.removeAt(100))
-  println("removeAt(-1)=" + aLargeList.removeAt(-1))
+  println(aLargeList ++ anotherList)
+  println("map(x*x)=" + aLargeList.map(x => x * x))
+  println("flatMap(x*x, x*x+1)=" + aLargeList.flatMap(x => x * x :: x * x + 1 :: RNil))
+  println("filter(x%2==0)=" + aLargeList.filter(x => x % 2 == 0))
 }
