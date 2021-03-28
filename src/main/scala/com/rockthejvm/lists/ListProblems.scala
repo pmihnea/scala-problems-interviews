@@ -26,6 +26,12 @@ sealed abstract class RList[+T] {
   def flatMap[S](f: T => RList[S]): RList[S]
 
   def filter(f: T => Boolean): RList[T]
+
+  /**
+    * Medium
+    */
+  // run-length encoding
+  def rle: RList[(T,Int)]
 }
 
 case object RNil extends RList[Nothing] {
@@ -52,6 +58,8 @@ case object RNil extends RList[Nothing] {
   override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
 
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
+
+  override def rle: RList[(Nothing, Int)] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -163,6 +171,19 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     filterRec(this, RNil)
   }
+
+  /*
+  Complexity: O(N)
+   */
+  override def rle: RList[(T, Int)] = {
+    @tailrec
+    def rleRec(remaining: RList[T], currentElement: T, currentOccurrences: Int, acc: RList[(T, Int)]) : RList[(T,Int)] = {
+      if(remaining.isEmpty) ((currentElement,currentOccurrences) :: acc).reverse
+      else if(remaining.head == currentElement) rleRec(remaining.tail, currentElement, currentOccurrences+1, acc)
+      else rleRec(remaining.tail, remaining.head, 1, (currentElement, currentOccurrences) ::acc)
+    }
+    rleRec(tail, head, 1, RNil)
+  }
 }
 
 object RList {
@@ -178,11 +199,6 @@ object RList {
 
 object ListProblems extends App {
 
-  val aLargeList = RList.from(1 to 10)
-  val anotherList = RList.from(11 to 15)
-  println(aLargeList)
-  println(aLargeList ++ anotherList)
-  println("map(x*x)=" + aLargeList.map(x => x * x))
-  println("flatMap(x*x, x*x+1)=" + aLargeList.flatMap(x => x * x :: x * x + 1 :: RNil))
-  println("filter(x%2==0)=" + aLargeList.filter(x => x % 2 == 0))
+  val aList = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 4 :: 4 :: RNil
+  println(aList.rle)
 }
