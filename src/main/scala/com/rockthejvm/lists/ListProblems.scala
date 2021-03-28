@@ -196,6 +196,8 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 = dupR([2,3], 0, [1,1,1]) = ...
 = dupR([], 0, [3,3,3,2,2,2,1,1,1])
 = [1,1,1,2,2,2,3,3,3]
+
+Complexity: O(N * k)
  */
   override def duplicateEach(k: Int): RList[T] = {
     @tailrec
