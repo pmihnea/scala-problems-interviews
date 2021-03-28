@@ -99,13 +99,13 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 
   @tailrec
-  private def appendReversedRec[S](remaining: RList[S], acc: RList[S]): RList[S] = {
+  private def concatReversedRec[S](remaining: RList[S], acc: RList[S]): RList[S] = {
     if (remaining.isEmpty) acc
-    else appendReversedRec(remaining.tail, remaining.head :: acc)
+    else concatReversedRec(remaining.tail, remaining.head :: acc)
   }
 
   override def ++[S >: T](anotherList: RList[S]): RList[S] = {
-    appendReversedRec(this.reverse, anotherList)
+    concatReversedRec(this.reverse, anotherList)
   }
 
   override def removeAt(index: Int): RList[T] = {
@@ -113,7 +113,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     def removeAtRec[S >: T](remaining: RList[S], accReversed: RList[S], currentIndex: Int): RList[S] = {
       if (currentIndex == index) {
         if (remaining.isEmpty) this
-        else appendReversedRec(accReversed, remaining.tail)
+        else concatReversedRec(accReversed, remaining.tail)
       } else {
         if (remaining.isEmpty) this
         else removeAtRec(remaining.tail, remaining.head :: accReversed, currentIndex + 1)
@@ -138,7 +138,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     @tailrec
     def flatMapRec(remaining: RList[T], acc: RList[S]): RList[S] = {
       if (remaining.isEmpty) acc.reverse
-      else flatMapRec(remaining.tail, appendReversedRec[S](f(remaining.head), acc))
+      else flatMapRec(remaining.tail, concatReversedRec[S](f(remaining.head), acc))
     }
 
     flatMapRec(this, RNil)
