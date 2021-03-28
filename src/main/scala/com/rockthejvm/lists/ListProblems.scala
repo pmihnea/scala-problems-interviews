@@ -98,6 +98,9 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     reverseRec(this, RNil)
   }
 
+  /**
+    * Complexity: O(N) - N is the number of elements of the remaining list
+    */
   @tailrec
   private def concatReversedRec[S](remaining: RList[S], acc: RList[S]): RList[S] = {
     if (remaining.isEmpty) acc
@@ -120,6 +123,9 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     else removeAtRec(this, RNil, 0)
   }
 
+  /*
+    * Complexity: O(N) - where N is the number of the elements of the list
+    */
   override def map[S](f: T => S): RList[S] = {
     @tailrec
     def mapRec(remaining: RList[T], acc: RList[S]): RList[S] = {
@@ -130,6 +136,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     mapRec(this, RNil)
   }
 
+  /*
+    * Complexity: O(N * M) - where N is the number of the elements of the list and
+    * M is the average number of elements of the f(x) list, where x is an element of the list
+    */
   override def flatMap[S](f: T => RList[S]): RList[S] = {
     @tailrec
     def flatMapRec(remaining: RList[T], acc: RList[S]): RList[S] = {
@@ -140,6 +150,9 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     flatMapRec(this, RNil)
   }
 
+  /*
+  * Complexity: O(N)
+   */
   override def filter(f: T => Boolean): RList[T] = {
     @tailrec
     def filterRec(remaining: RList[T], accReversed: RList[T]): RList[T] = {
