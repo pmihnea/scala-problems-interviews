@@ -110,14 +110,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
   override def removeAt(index: Int): RList[T] = {
     @tailrec
-    def removeAtRec[S >: T](remaining: RList[S], accReversed: RList[S], currentIndex: Int): RList[S] = {
-      if (currentIndex == index) {
-        if (remaining.isEmpty) this
-        else concatReversedRec(accReversed, remaining.tail)
-      } else {
-        if (remaining.isEmpty) this
-        else removeAtRec(remaining.tail, remaining.head :: accReversed, currentIndex + 1)
-      }
+    def removeAtRec[S >: T](remaining: RList[S], acc: RList[S], currentIndex: Int): RList[S] = {
+      if (remaining.isEmpty) this
+      else if (currentIndex == index) concatReversedRec(acc, remaining.tail)
+      else removeAtRec(remaining.tail, remaining.head :: acc, currentIndex + 1)
     }
 
     if (index < 0) this
