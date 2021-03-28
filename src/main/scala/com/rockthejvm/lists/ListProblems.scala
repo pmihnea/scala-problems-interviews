@@ -32,6 +32,8 @@ sealed abstract class RList[+T] {
     */
   // run-length encoding
   def rle: RList[(T,Int)]
+
+  def duplicateEach(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -60,6 +62,8 @@ case object RNil extends RList[Nothing] {
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
 
   override def rle: RList[(Nothing, Int)] = RNil
+
+  override def duplicateEach(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -184,6 +188,24 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     }
     rleRec(tail, head, 1, RNil)
   }
+/*
+[1,2,3].duplicateEach(3) = duplicateRec([1,2,3], 0, [])
+= dupR([1,2,3], 1, [1])
+= dupR([1,2,3], 2, [1,1])
+= dupR([1,2,3], 3, [1,1,1])
+= dupR([2,3], 0, [1,1,1]) = ...
+= dupR([], 0, [3,3,3,2,2,2,1,1,1])
+= [1,1,1,2,2,2,3,3,3]
+ */
+  override def duplicateEach(k: Int): RList[T] = {
+    @tailrec
+    def duplicateRec(remaining: RList[T], nAddedDuplications: Int, acc: RList[T]): RList[T] = {
+      if(remaining.isEmpty) acc.reverse
+      else if(nAddedDuplications == k) duplicateRec(remaining.tail, 0, acc)
+      else duplicateRec(remaining, nAddedDuplications+1, remaining.head :: acc)
+    }
+    duplicateRec(this, 0, RNil)
+  }
 }
 
 object RList {
@@ -199,6 +221,8 @@ object RList {
 
 object ListProblems extends App {
 
-  val aList = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 4 :: 4 :: RNil
-  println(aList.rle)
+  val aList = 1 :: 2 :: 3  :: 4  :: RNil
+  println(aList.duplicateEach(3))
+  val aLargeList = RList.from(1 to 10000)
+  println(aLargeList.duplicateEach(3).length)
 }
