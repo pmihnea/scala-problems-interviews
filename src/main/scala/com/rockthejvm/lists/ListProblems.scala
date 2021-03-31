@@ -34,6 +34,8 @@ sealed abstract class RList[+T] {
   def rle: RList[(T,Int)]
 
   def duplicateEach(k: Int): RList[T]
+
+  def rotate(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -64,6 +66,8 @@ case object RNil extends RList[Nothing] {
   override def rle: RList[(Nothing, Int)] = RNil
 
   override def duplicateEach(k: Int): RList[Nothing] = RNil
+
+  override def rotate(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -208,6 +212,34 @@ Complexity: O(N * k)
     }
     duplicateRec(this, 0, RNil)
   }
+
+  /*
+  Complexity: O(max(N,k))
+   */
+  override def rotate(k: Int): RList[T] = {
+    /*
+    [1,2,3,4,5,6,7].rotate(3) =
+    = rRec([1,2,3,4,5,6,7], 0,[])
+    = rRec([2,3,4,5,6,7],1,[1]) = ...
+    = rRec([4,5,6,7],3,[3,2,1])
+    = [4,5,6,7] ++ [3,2,1].reverse
+     */
+    @tailrec
+    def rotateRec(remaining: RList[T], counter: Int, acc: RList[T]): RList[T] = {
+      if(counter == k){
+        remaining ++ acc.reverse
+      }else if(remaining.isEmpty){
+        rotateRec(this, counter, RNil)
+      }else{
+        rotateRec(remaining.tail, counter + 1, remaining.head :: acc)
+      }
+    }
+    if(k<=0) {
+      this
+    } else {
+      rotateRec(this, 0, RNil)
+    }
+  }
 }
 
 object RList {
@@ -223,8 +255,8 @@ object RList {
 
 object ListProblems extends App {
 
-  val aList = 1 :: 2 :: 3  :: 4  :: RNil
-  println(aList.duplicateEach(3))
-  val aLargeList = RList.from(1 to 10000)
-  println(aLargeList.duplicateEach(3).length)
+  val aList = RList.from(1 to 10)
+  for{
+    i: Int <- 1 to 20
+  } println(s"rotate($i) = ${aList.rotate(i)}")
 }
