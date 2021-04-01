@@ -1,6 +1,7 @@
 package com.rockthejvm.lists
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 sealed abstract class RList[+T] {
   def head: T
@@ -36,6 +37,8 @@ sealed abstract class RList[+T] {
   def duplicateEach(k: Int): RList[T]
 
   def rotate(k: Int): RList[T]
+
+  def sample(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -68,6 +71,8 @@ case object RNil extends RList[Nothing] {
   override def duplicateEach(k: Int): RList[Nothing] = RNil
 
   override def rotate(k: Int): RList[Nothing] = RNil
+
+  override def sample(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -240,6 +245,21 @@ Complexity: O(N * k)
       rotateRec(this, 0, RNil)
     }
   }
+
+  /*
+  Complexity: O(N*k)
+   */
+  override def sample(k: Int): RList[T] = {
+    val n = this.length
+    val random = new Random(System.currentTimeMillis());
+    @tailrec
+    def sampleRec(counter: Int, acc: RList[T]): RList[T] = {
+      if(counter > k) acc
+      else sampleRec(counter+1, this.apply(random.nextInt(n)) :: acc)
+    }
+    if(k<0) RNil
+    else sampleRec(0, RNil)
+  }
 }
 
 object RList {
@@ -256,7 +276,5 @@ object RList {
 object ListProblems extends App {
 
   val aList = RList.from(1 to 10)
-  for{
-    i: Int <- 1 to 20
-  } println(s"rotate($i) = ${aList.rotate(i)}")
+  println(s"sample(5) = " + aList.sample(4))
 }
