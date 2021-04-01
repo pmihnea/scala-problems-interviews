@@ -257,8 +257,11 @@ Complexity: O(N * k)
       if(counter > k) acc
       else sampleRec(counter+1, this.apply(random.nextInt(n)) :: acc)
     }
+    def sampleElegant():RList[T] =
+      RList.from((1 to k).map(_ => random.nextInt(n)).map(this(_)))
+
     if(k<0) RNil
-    else sampleRec(0, RNil)
+    else sampleElegant()
   }
 }
 
@@ -275,6 +278,6 @@ object RList {
 
 object ListProblems extends App {
 
-  val aList = RList.from(1 to 10)
-  println(s"sample(5) = " + aList.sample(4))
+  val aList = RList.from(1 to 10000)
+  println(s"sample(5) = " + aList.sample(5))
 }
