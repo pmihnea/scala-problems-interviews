@@ -41,6 +41,8 @@ sealed abstract class RList[+T] {
   def sample(k: Int): RList[T]
 
   def insertionSort[S >: T](ordering: Ordering[S]): RList[S]
+
+  def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -77,6 +79,8 @@ case object RNil extends RList[Nothing] {
   override def sample(k: Int): RList[Nothing] = RNil
 
   override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -311,6 +315,32 @@ Complexity: O(N * k)
     }
     foreachRec(this, RNil)
   }
+
+  override def mergeSort[S >: T](ordering: Ordering[S]): RList[S] = {
+    @tailrec
+    def splitRec(remaining: RList[S], left: RList[S], right: RList[S]): (RList[S],RList[S]) = {
+      if(remaining.isEmpty) (left,right) // are reversed but it doesn't matter here
+      else if(remaining.tail.isEmpty) splitRec(RNil, remaining.head::left, right)
+      else splitRec(remaining.tail.tail, remaining.head::left, remaining.tail.head::right)
+    }
+
+    @tailrec
+    def mergeRec(left: RList[S], right: RList[S], acc: RList[S]): RList[S] = {
+      if(left.isEmpty && right.isEmpty) acc.reverse
+      else if(left.isEmpty) mergeRec(RNil, RNil, concatReversedRec(right, acc))
+      else if(right.isEmpty) mergeRec(RNil, RNil, concatReversedRec(left, acc))
+      else if(ordering.lt(left.head, right.head)) mergeRec(left.tail, right, left.head::acc)
+      else mergeRec(left, right.tail, right.head::acc)
+    }
+
+    if(tail.isEmpty) this
+    else{
+      val partition = splitRec(this, RNil, RNil)
+      val left = partition._1.mergeSort(ordering)
+      val right = partition._2.mergeSort(ordering)
+      mergeRec(left, right, RNil)
+    }
+  }
 }
 
 object RList {
@@ -335,10 +365,11 @@ object ListProblems extends App {
 
   private def test(aList: RList[Int]) = {
     val startTime = System.currentTimeMillis()
-    val aListSorted = aList.insertionSort(Ordering[Int])
+    val aListSorted = aList.mergeSort(Ordering[Int])
     val duration = System.currentTimeMillis()-startTime
+    println("#######")
     println("initial = " + aList)
     println("sorted = " + aListSorted)
-    println(s"duration = $duration ms")
+    println(s"duration = $duration ms ")
   }
 }
