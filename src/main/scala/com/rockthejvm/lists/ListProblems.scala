@@ -40,7 +40,7 @@ sealed abstract class RList[+T] {
 
   def sample(k: Int): RList[T]
 
-  def sorted[S >: T](ordering: Ordering[S]): RList[S]
+  def insertionSort[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -76,7 +76,7 @@ case object RNil extends RList[Nothing] {
 
   override def sample(k: Int): RList[Nothing] = RNil
 
-  override def sorted[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+  override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -268,7 +268,7 @@ Complexity: O(N * k)
     else sampleElegant()
   }
 
-  override def sorted[S >: T](ordering: Ordering[S]): RList[S] = {
+  override def insertionSort[S >: T](ordering: Ordering[S]): RList[S] = {
     /*
     insertRec(4, [1,2,5,6], [])
     = iRec(4, [2,5,6],[1])
@@ -335,7 +335,7 @@ object ListProblems extends App {
 
   private def test(aList: RList[Int]) = {
     val startTime = System.currentTimeMillis()
-    val aListSorted = aList.sorted(Ordering[Int])
+    val aListSorted = aList.insertionSort(Ordering[Int])
     val duration = System.currentTimeMillis()-startTime
     println("initial = " + aList)
     println("sorted = " + aListSorted)
