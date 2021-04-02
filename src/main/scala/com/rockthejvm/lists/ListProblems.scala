@@ -39,6 +39,8 @@ sealed abstract class RList[+T] {
   def rotate(k: Int): RList[T]
 
   def sample(k: Int): RList[T]
+
+  def sorted[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -73,6 +75,8 @@ case object RNil extends RList[Nothing] {
   override def rotate(k: Int): RList[Nothing] = RNil
 
   override def sample(k: Int): RList[Nothing] = RNil
+
+  override def sorted[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -263,6 +267,50 @@ Complexity: O(N * k)
     if(k<0) RNil
     else sampleElegant()
   }
+
+  override def sorted[S >: T](ordering: Ordering[S]): RList[S] = {
+    /*
+    insertRec(4, [1,2,5,6], [])
+    = iRec(4, [2,5,6],[1])
+    = iRec(4, [5,6], [2,1] = concatReverseRec([2,1], [4,5,6]) = [1,2,4,5,6]
+
+    insertRec(4, [1,2,3], []) =
+    = iRec(4, [2,3],[1])
+    = iRec(4, [3], [2,1])
+    = iRec(4, [], [3,2,1]) = [4,3,2,1].reverse
+    = [1,2,3,4]
+     */
+    /*
+    Complexity: O(N) - 2xN - one for traversal one for reversing,
+      where N is the number of elements of the remaining list
+     */
+    @tailrec
+    def insertRec(elem: S, beforeSorted: RList[S], afterSortedReversed: RList[S]): RList[S] ={
+      if(beforeSorted.isEmpty) (elem::afterSortedReversed).reverse
+      else if(ordering.lt(elem, beforeSorted.head)) concatReversedRec(afterSortedReversed, elem::beforeSorted)
+      else insertRec(elem, beforeSorted.tail, beforeSorted.head::afterSortedReversed)
+    }
+
+    /*
+    foreach([3,1,4,2], RNil) =
+    = fRec([1,4,2], insertRec(3, RNil, RNil)) = fRec([1,4,2], [3])
+    = fRec([4,2] , insertRec(1, [3], RNil)) = fRec([4,2], [1,3])
+    = fRec([2], insertRec(4, [1,3], RNil) = fRec([2], [1,3,4])
+    = fRec([], insertRec(2, [1,3,4] ,RNil) = fRec([], [1,2,3,4])
+    = [1,2,3,4]
+     */
+    /*
+    Complexity: O(1+2+3+..+N) = O(N^2)
+     */
+    @tailrec
+    def foreachRec(remaining: RList[T], result: RList[S]): RList[S] = {
+      if(remaining.isEmpty) result
+      else {
+        foreachRec(remaining.tail, insertRec(remaining.head, result, RNil))
+      }
+    }
+    foreachRec(this, RNil)
+  }
 }
 
 object RList {
@@ -278,6 +326,19 @@ object RList {
 
 object ListProblems extends App {
 
-  val aList = RList.from(1 to 10000)
-  println(s"sample(5) = " + aList.sample(5))
+  test(RNil)
+  test(1::2::3::4::RNil)
+  test(3::1::4::2::RNil)
+  test(2::RNil)
+  test(RList.from(Range.inclusive(1, 10000)))
+  test(RList.from(Range.inclusive(10000 , 1, -1)))
+
+  private def test(aList: RList[Int]) = {
+    val startTime = System.currentTimeMillis()
+    val aListSorted = aList.sorted(Ordering[Int])
+    val duration = System.currentTimeMillis()-startTime
+    println("initial = " + aList)
+    println("sorted = " + aListSorted)
+    println(s"duration = $duration ms")
+  }
 }
