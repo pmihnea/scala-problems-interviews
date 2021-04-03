@@ -32,7 +32,7 @@ sealed abstract class RList[+T] {
     * Medium
     */
   // run-length encoding
-  def rle: RList[(T,Int)]
+  def rle: RList[(T, Int)]
 
   def duplicateEach(k: Int): RList[T]
 
@@ -198,31 +198,34 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
    */
   override def rle: RList[(T, Int)] = {
     @tailrec
-    def rleRec(remaining: RList[T], currentElement: T, currentOccurrences: Int, acc: RList[(T, Int)]) : RList[(T,Int)] = {
-      if(remaining.isEmpty) ((currentElement,currentOccurrences) :: acc).reverse
-      else if(remaining.head == currentElement) rleRec(remaining.tail, currentElement, currentOccurrences+1, acc)
-      else rleRec(remaining.tail, remaining.head, 1, (currentElement, currentOccurrences) ::acc)
+    def rleRec(remaining: RList[T], currentElement: T, currentOccurrences: Int, acc: RList[(T, Int)]): RList[(T, Int)] = {
+      if (remaining.isEmpty) ((currentElement, currentOccurrences) :: acc).reverse
+      else if (remaining.head == currentElement) rleRec(remaining.tail, currentElement, currentOccurrences + 1, acc)
+      else rleRec(remaining.tail, remaining.head, 1, (currentElement, currentOccurrences) :: acc)
     }
+
     rleRec(tail, head, 1, RNil)
   }
-/*
-[1,2,3].duplicateEach(3) = duplicateRec([1,2,3], 0, [])
-= dupR([1,2,3], 1, [1])
-= dupR([1,2,3], 2, [1,1])
-= dupR([1,2,3], 3, [1,1,1])
-= dupR([2,3], 0, [1,1,1]) = ...
-= dupR([], 0, [3,3,3,2,2,2,1,1,1])
-= [1,1,1,2,2,2,3,3,3]
 
-Complexity: O(N * k)
- */
+  /*
+  [1,2,3].duplicateEach(3) = duplicateRec([1,2,3], 0, [])
+  = dupR([1,2,3], 1, [1])
+  = dupR([1,2,3], 2, [1,1])
+  = dupR([1,2,3], 3, [1,1,1])
+  = dupR([2,3], 0, [1,1,1]) = ...
+  = dupR([], 0, [3,3,3,2,2,2,1,1,1])
+  = [1,1,1,2,2,2,3,3,3]
+
+  Complexity: O(N * k)
+   */
   override def duplicateEach(k: Int): RList[T] = {
     @tailrec
     def duplicateRec(remaining: RList[T], nAddedDuplications: Int, acc: RList[T]): RList[T] = {
-      if(remaining.isEmpty) acc.reverse
-      else if(nAddedDuplications == k) duplicateRec(remaining.tail, 0, acc)
-      else duplicateRec(remaining, nAddedDuplications+1, remaining.head :: acc)
+      if (remaining.isEmpty) acc.reverse
+      else if (nAddedDuplications == k) duplicateRec(remaining.tail, 0, acc)
+      else duplicateRec(remaining, nAddedDuplications + 1, remaining.head :: acc)
     }
+
     duplicateRec(this, 0, RNil)
   }
 
@@ -239,15 +242,16 @@ Complexity: O(N * k)
      */
     @tailrec
     def rotateRec(remaining: RList[T], counter: Int, acc: RList[T]): RList[T] = {
-      if(counter == k){
+      if (counter == k) {
         remaining ++ acc.reverse
-      }else if(remaining.isEmpty){
+      } else if (remaining.isEmpty) {
         rotateRec(this, counter, RNil)
-      }else{
+      } else {
         rotateRec(remaining.tail, counter + 1, remaining.head :: acc)
       }
     }
-    if(k<=0) {
+
+    if (k <= 0) {
       this
     } else {
       rotateRec(this, 0, RNil)
@@ -262,13 +266,14 @@ Complexity: O(N * k)
     val random = new Random(System.currentTimeMillis());
     @tailrec
     def sampleRec(counter: Int, acc: RList[T]): RList[T] = {
-      if(counter > k) acc
-      else sampleRec(counter+1, this.apply(random.nextInt(n)) :: acc)
+      if (counter > k) acc
+      else sampleRec(counter + 1, this.apply(random.nextInt(n)) :: acc)
     }
-    def sampleElegant():RList[T] =
-      RList.from((1 to k).map(_ => random.nextInt(n)).map(this(_)))
 
-    if(k<0) RNil
+    def sampleElegant(): RList[T] =
+      RList.from((1 to k).map(_ => random.nextInt(n)).map(this (_)))
+
+    if (k < 0) RNil
     else sampleElegant()
   }
 
@@ -289,10 +294,10 @@ Complexity: O(N * k)
       where N is the number of elements of the remaining list
      */
     @tailrec
-    def insertRec(elem: S, beforeSorted: RList[S], afterSortedReversed: RList[S]): RList[S] ={
-      if(beforeSorted.isEmpty) (elem::afterSortedReversed).reverse
-      else if(ordering.lt(elem, beforeSorted.head)) concatReversedRec(afterSortedReversed, elem::beforeSorted)
-      else insertRec(elem, beforeSorted.tail, beforeSorted.head::afterSortedReversed)
+    def insertRec(elem: S, beforeSorted: RList[S], afterSortedReversed: RList[S]): RList[S] = {
+      if (beforeSorted.isEmpty) (elem :: afterSortedReversed).reverse
+      else if (ordering.lt(elem, beforeSorted.head)) concatReversedRec(afterSortedReversed, elem :: beforeSorted)
+      else insertRec(elem, beforeSorted.tail, beforeSorted.head :: afterSortedReversed)
     }
 
     /*
@@ -308,38 +313,43 @@ Complexity: O(N * k)
      */
     @tailrec
     def foreachRec(remaining: RList[T], result: RList[S]): RList[S] = {
-      if(remaining.isEmpty) result
+      if (remaining.isEmpty) result
       else {
         foreachRec(remaining.tail, insertRec(remaining.head, result, RNil))
       }
     }
+
     foreachRec(this, RNil)
   }
 
+  /*
+  Complexity O(N * log N)
+   */
   override def mergeSort[S >: T](ordering: Ordering[S]): RList[S] = {
     @tailrec
-    def splitRec(remaining: RList[S], left: RList[S], right: RList[S]): (RList[S],RList[S]) = {
-      if(remaining.isEmpty) (left,right) // are reversed but it doesn't matter here
-      else if(remaining.tail.isEmpty) splitRec(RNil, remaining.head::left, right)
-      else splitRec(remaining.tail.tail, remaining.head::left, remaining.tail.head::right)
+    def mergeRec(left: RList[S], right: RList[S], acc: RList[S]): RList[S] = {
+      if (left.isEmpty && right.isEmpty) acc.reverse
+      else if (left.isEmpty) mergeRec(RNil, RNil, concatReversedRec(right, acc))
+      else if (right.isEmpty) mergeRec(RNil, RNil, concatReversedRec(left, acc))
+      else if (ordering.lt(left.head, right.head)) mergeRec(left.tail, right, left.head :: acc)
+      else mergeRec(left, right.tail, right.head :: acc)
     }
 
     @tailrec
-    def mergeRec(left: RList[S], right: RList[S], acc: RList[S]): RList[S] = {
-      if(left.isEmpty && right.isEmpty) acc.reverse
-      else if(left.isEmpty) mergeRec(RNil, RNil, concatReversedRec(right, acc))
-      else if(right.isEmpty) mergeRec(RNil, RNil, concatReversedRec(left, acc))
-      else if(ordering.lt(left.head, right.head)) mergeRec(left.tail, right, left.head::acc)
-      else mergeRec(left, right.tail, right.head::acc)
+    def mergeSortRec(inPartitions: RList[RList[S]], outPartitions: RList[RList[S]]): RList[S] = {
+      if (inPartitions.isEmpty) {
+        if (outPartitions.isEmpty) RNil
+        else if (outPartitions.tail.isEmpty) outPartitions.head
+        else mergeSortRec(outPartitions, RNil)
+      } else if (inPartitions.tail.isEmpty) {
+        if(outPartitions.isEmpty) inPartitions.head
+        else mergeSortRec(inPartitions.head :: outPartitions, RNil)
+      }
+      else mergeSortRec(inPartitions.tail.tail, mergeRec(inPartitions.head, inPartitions.tail.head, RNil) :: outPartitions)
     }
 
-    if(tail.isEmpty) this
-    else{
-      val partition = splitRec(this, RNil, RNil)
-      val left = partition._1.mergeSort(ordering)
-      val right = partition._2.mergeSort(ordering)
-      mergeRec(left, right, RNil)
-    }
+    val partitions = this.map((_ :: RNil))
+    mergeSortRec(partitions, RNil)
   }
 }
 
@@ -357,16 +367,17 @@ object RList {
 object ListProblems extends App {
 
   test(RNil)
-  test(1::2::3::4::RNil)
-  test(3::1::4::2::RNil)
-  test(2::RNil)
+  test(1 :: 2 :: 3 :: 4 :: RNil)
+  test(3 :: 1 :: 4 :: 2 :: RNil)
+  test(3 :: 1 :: 4 :: 2 :: 0 :: RNil)
+  test(2 :: RNil)
   test(RList.from(Range.inclusive(1, 10000)))
-  test(RList.from(Range.inclusive(10000 , 1, -1)))
+  test(RList.from(Range.inclusive(10000, 1, -1)))
 
   private def test(aList: RList[Int]) = {
     val startTime = System.currentTimeMillis()
     val aListSorted = aList.mergeSort(Ordering[Int])
-    val duration = System.currentTimeMillis()-startTime
+    val duration = System.currentTimeMillis() - startTime
     println("#######")
     println("initial = " + aList)
     println("sorted = " + aListSorted)
