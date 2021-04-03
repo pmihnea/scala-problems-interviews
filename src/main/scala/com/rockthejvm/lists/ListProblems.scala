@@ -43,6 +43,8 @@ sealed abstract class RList[+T] {
   def insertionSort[S >: T](ordering: Ordering[S]): RList[S]
 
   def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
+
+  def quickSort[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -81,6 +83,8 @@ case object RNil extends RList[Nothing] {
   override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 
   override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -342,7 +346,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
         else if (outPartitions.tail.isEmpty) outPartitions.head
         else mergeSortRec(outPartitions, RNil)
       } else if (inPartitions.tail.isEmpty) {
-        if(outPartitions.isEmpty) inPartitions.head
+        if (outPartitions.isEmpty) inPartitions.head
         else mergeSortRec(inPartitions.head :: outPartitions, RNil)
       }
       else mergeSortRec(inPartitions.tail.tail, mergeRec(inPartitions.head, inPartitions.tail.head, RNil) :: outPartitions)
@@ -350,6 +354,28 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     val partitions = this.map((_ :: RNil))
     mergeSortRec(partitions, RNil)
+  }
+
+  override def quickSort[S >: T](ordering: Ordering[S]): RList[S] = {
+    // take a pivot: first elem or one of the first 10
+    // split in two lists -> smallerReversed, biggerAndEqReversed //it doesn't matter that they are reversed
+    // sort both lists using quick sort -> smallerSorted, biggerAndEqSorted
+    // result = smallerSorted ++ biggerAndEqSorted
+
+    @tailrec
+    def splitRec(pivot: S, remaining: RList[S], smaller: RList[S], biggerAndEq: RList[S]): (RList[S], RList[S]) = {
+      if (remaining.isEmpty) (smaller, biggerAndEq) //they are returned reversed but it doesn't matter, it is even better later for choosing the pivot
+      else if (ordering.lt(remaining.head, pivot)) splitRec(pivot, remaining.tail, remaining.head :: smaller, biggerAndEq)
+      else splitRec(pivot, remaining.tail, smaller, remaining.head :: biggerAndEq)
+    }
+
+    if (tail.isEmpty) this
+    else {
+      val partition = splitRec(head, this, RNil, RNil)
+      val left = partition._1.quickSort(ordering)
+      val right = partition._2.quickSort(ordering)
+      left ++ right
+    }
   }
 }
 
@@ -376,7 +402,7 @@ object ListProblems extends App {
 
   private def test(aList: RList[Int]) = {
     val startTime = System.currentTimeMillis()
-    val aListSorted = aList.mergeSort(Ordering[Int])
+    val aListSorted = aList.quickSort(Ordering[Int])
     val duration = System.currentTimeMillis() - startTime
     println("#######")
     println("initial = " + aList)
