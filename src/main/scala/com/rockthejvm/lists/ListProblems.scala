@@ -360,6 +360,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     mergeSortRec(partitions, RNil)
   }
 
+  /*
+  Complexity O(N^2) worse case (when the list is sorted)
+    O(N * log (N) ) in average case
+   */
   override def quickSort[S >: T](ordering: Ordering[S]): RList[S] = {
     // take a pivot: first elem or one of the first 10
     // split in two lists -> smallerReversed, biggerAndEqReversed //it doesn't matter that they are reversed
@@ -375,21 +379,9 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     splitRec(5, [5, 7], [],[]) = sr(5,[7], [], [5]) = sr(5, [], [], [7,5])
      */
-
     @tailrec
-    def splitRec(pivot: S, remaining: RList[S], smaller: RList[S], biggerOrEq: RList[S]): (RList[S], RList[S]) = {
-      if (remaining.isEmpty) {
-        if (smaller.isEmpty && !biggerOrEq.isEmpty) {
-          if (ordering.lt(pivot, biggerOrEq.head)) {
-            // split again with a bigger pivot so the smaller list will contain at least one element, the older pivot
-            splitRec(biggerOrEq.head, biggerOrEq, RNil, RNil)
-          } else {
-            // the biggerOrEq.head is equal with the pivot
-            // create a smaller list with only the pivot
-            (biggerOrEq.head :: RNil, biggerOrEq.tail)
-          }
-        } else (smaller, biggerOrEq) //they are returned reversed but it doesn't matter, it is even better later for choosing the pivot
-      }
+    def splitRec(pivot: T, remaining: RList[T], smaller: RList[T], biggerOrEq: RList[T]): (RList[T], RList[T], RList[T]) = {
+      if (remaining.isEmpty) (smaller, pivot::RNil, biggerOrEq) //they are returned reversed but it doesn't matter, it is even better later for choosing the pivot
       else if (ordering.lt(remaining.head, pivot)) splitRec(pivot, remaining.tail, remaining.head :: smaller, biggerOrEq)
       else splitRec(pivot, remaining.tail, smaller, remaining.head :: biggerOrEq)
     }
@@ -404,17 +396,15 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     = [1,2,4,5,7]
      */
     @tailrec
-    def quickSortRec(partitions: RList[RList[S]], result: RList[S]): RList[S] = {
+    def quickSortRec(partitions: RList[RList[T]], result: RList[T]): RList[T] = {
       if (partitions.isEmpty) result.reverse
       else {
         val headPartition = partitions.head
-        if (headPartition.isEmpty) quickSortRec(partitions.tail, result)
+        if (headPartition.isEmpty) quickSortRec(partitions.tail, result) // skips the [] generated from splitting
         else if (headPartition.tail.isEmpty) quickSortRec(partitions.tail, headPartition.head :: result)
         else {
-          val newHeadPartitions = splitRec(headPartition.head, headPartition, RNil, RNil) // the pivot is the first elem
-          val newRightPartitions = if (newHeadPartitions._2.isEmpty) partitions.tail else newHeadPartitions._2 :: partitions.tail
-          val newPartitions = if (newHeadPartitions._1.isEmpty) newRightPartitions else newHeadPartitions._1 :: newRightPartitions
-          quickSortRec(newPartitions, result)
+          val (smaller, pivotList, biggerOrEq ) = splitRec(headPartition.head, headPartition.tail, RNil, RNil) // the pivot is the first elem
+          quickSortRec(smaller :: pivotList :: biggerOrEq :: partitions.tail, result)
         }
       }
     }
