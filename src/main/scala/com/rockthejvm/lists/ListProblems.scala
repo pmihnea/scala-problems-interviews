@@ -437,26 +437,40 @@ object RList {
 
 object ListProblems extends App {
 
-  test(RNil)
-  test(1 :: 2 :: 3 :: 4 :: RNil)
-  test(3 :: 1 :: 4 :: 2 :: RNil)
-  test(3 :: 1 :: 4 :: 2 :: 0 :: RNil)
-  test(2 :: RNil)
-  test(3 :: 1 :: 1 :: 1 :: 4 :: RNil)
-  test(RList.from(Range.inclusive(1, 10000)))
-  test(RList.from(Range.inclusive(10000, 1, -1)))
-  val r = new Random(System.currentTimeMillis())
-  test(RList.from(Range.inclusive(1, 10000).map(_ => r.nextInt(100000))))
+  private val insertSort: RList[Int] => RList[Int] = _.insertionSort(Ordering[Int])
+  private val mergeSort: RList[Int] => RList[Int] = _.mergeSort(Ordering[Int])
+  private val quickSort: RList[Int] => RList[Int] = _.quickSort(Ordering[Int])
 
-  private def test(aList: RList[Int]) = {
+  testSuite(insertSort, "insertSort")
+  testSuite(mergeSort, "mergeSort")
+  testSuite(quickSort, "quickSort")
+
+  private def testSuite(sort: RList[Int] => RList[Int], method: String) = {
+    println("####### NEW TEST SUITE: " + method)
+    test("empty", RNil, sort)
+    test("4 elements sorted", 1 :: 2 :: 3 :: 4 :: RNil, sort)
+    test("4 elements not sorted", 3 :: 1 :: 4 :: 2 :: RNil, sort)
+    test("5 elements not sorted", 3 :: 1 :: 4 :: 2 :: 0 :: RNil, sort)
+    test("1 elem", 2 :: RNil, sort)
+    test("5 elements with duplicates", 3 :: 1 :: 1 :: 1 :: 4 :: RNil, sort)
+    test("10000 elements sorted asc", RList.from(Range.inclusive(1, 10000)), sort)
+    test("10000 elements sorted desc",RList.from(Range.inclusive(10000, 1, -1)), sort)
+    val r = new Random(System.currentTimeMillis())
+    test("10000 elements not sorted", RList.from(Range.inclusive(1, 10000).map(_ => r.nextInt(10000))), sort)
+    println
+  }
+
+  private def test(name: String, aList: RList[Int], sort: RList[Int] => RList[Int]) = {
+    val aListLength = aList.length
     val startTime = System.currentTimeMillis()
-    val aListSorted = aList.quickSort(Ordering[Int])
+    val aListSorted = sort(aList)
     val duration = System.currentTimeMillis() - startTime
+    val aListSortedLength = aListSorted.length
     val isSorted: Boolean = aListSorted.isSorted(Ordering[Int])
-    println("#######")
-    println("initial = " + aList)
-    println("sorted = " + aListSorted)
-    println("is sorted = " + isSorted)
+    println("####### NEW TEST: " + name)
+    println("initial = " + (if(aListLength > 10) s"$aListLength elements" else aList))
+    println("sorted = " + (if(aListSortedLength > 10) s"$aListSortedLength elements" else aListSortedLength))
+    println("is sorted = " + (isSorted && aListLength == aListSortedLength))
     println(s"duration = $duration ms ")
   }
 }
