@@ -45,6 +45,8 @@ sealed abstract class RList[+T] {
   def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
 
   def quickSort[S >: T](ordering: Ordering[S]): RList[S]
+
+  def isSorted[S >: T](ordering: Ordering[S]): Boolean
 }
 
 case object RNil extends RList[Nothing] {
@@ -85,6 +87,8 @@ case object RNil extends RList[Nothing] {
   override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 
   override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def isSorted[S >: Nothing](ordering: Ordering[S]): Boolean = true
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -362,20 +366,71 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     // sort both lists using quick sort -> smallerSorted, biggerAndEqSorted
     // result = smallerSorted ++ biggerAndEqSorted
 
+    /*
+    splitRec(5, [5,7,1,3], [], [])
+    = sr(5, [7,1,3], [], [5] )
+    = sr(5, [1,3], [], [7,5])
+    = sr(5, [3], [1], [7,5])
+    = sr(5, [], [3,1], [7,5]) = ([3,1], [7,5])
+
+    splitRec(5, [5, 7], [],[]) = sr(5,[7], [], [5]) = sr(5, [], [], [7,5])
+     */
+
     @tailrec
-    def splitRec(pivot: S, remaining: RList[S], smaller: RList[S], biggerAndEq: RList[S]): (RList[S], RList[S]) = {
-      if (remaining.isEmpty) (smaller, biggerAndEq) //they are returned reversed but it doesn't matter, it is even better later for choosing the pivot
-      else if (ordering.lt(remaining.head, pivot)) splitRec(pivot, remaining.tail, remaining.head :: smaller, biggerAndEq)
-      else splitRec(pivot, remaining.tail, smaller, remaining.head :: biggerAndEq)
+    def splitRec(pivot: S, remaining: RList[S], smaller: RList[S], biggerOrEq: RList[S]): (RList[S], RList[S]) = {
+      if (remaining.isEmpty) {
+        if (smaller.isEmpty && !biggerOrEq.isEmpty) {
+          if (ordering.lt(pivot, biggerOrEq.head)) {
+            // split again with a bigger pivot so the smaller list will contain at least one element, the older pivot
+            splitRec(biggerOrEq.head, biggerOrEq, RNil, RNil)
+          } else {
+            // the biggerOrEq.head is equal with the pivot
+            // create a smaller list with only the pivot
+            (biggerOrEq.head :: RNil, biggerOrEq.tail)
+          }
+        } else (smaller, biggerOrEq) //they are returned reversed but it doesn't matter, it is even better later for choosing the pivot
+      }
+      else if (ordering.lt(remaining.head, pivot)) splitRec(pivot, remaining.tail, remaining.head :: smaller, biggerOrEq)
+      else splitRec(pivot, remaining.tail, smaller, remaining.head :: biggerOrEq)
+    }
+
+    /*
+    quickSortRec([[5,2,7,4,1],[]) =
+    = qsr([[1,4,2],[7,5]], [])
+    = qsr([[2,4,1],[7,5]], [])
+    = qsr([[1],[4,2],[7,5]], []) = qsr([[4,2],[7,5]], [1])
+    = qsr([[2],[4],[7,5]], [1] ) = qsr([[4],[7,5]], [2,1]) = qsr([[7,5]], [4,2,1])
+    = qsr([[5],[7]], [4,2,1]) = qsr([[7]], [5,4,2,1]) = qsr([], [7,5,4,2,1])
+    = [1,2,4,5,7]
+     */
+    @tailrec
+    def quickSortRec(partitions: RList[RList[S]], result: RList[S]): RList[S] = {
+      if (partitions.isEmpty) result.reverse
+      else {
+        val headPartition = partitions.head
+        if (headPartition.isEmpty) quickSortRec(partitions.tail, result)
+        else if (headPartition.tail.isEmpty) quickSortRec(partitions.tail, headPartition.head :: result)
+        else {
+          val newHeadPartitions = splitRec(headPartition.head, headPartition, RNil, RNil) // the pivot is the first elem
+          val newRightPartitions = if (newHeadPartitions._2.isEmpty) partitions.tail else newHeadPartitions._2 :: partitions.tail
+          val newPartitions = if (newHeadPartitions._1.isEmpty) newRightPartitions else newHeadPartitions._1 :: newRightPartitions
+          quickSortRec(newPartitions, result)
+        }
+      }
     }
 
     if (tail.isEmpty) this
-    else {
-      val partition = splitRec(head, this, RNil, RNil)
-      val left = partition._1.quickSort(ordering)
-      val right = partition._2.quickSort(ordering)
-      left ++ right
+    else quickSortRec(this :: RNil, RNil)
+  }
+
+  override def isSorted[S >: T](ordering: Ordering[S]): Boolean = {
+    def isSortedRec(remaining: RList[S]): Boolean = {
+      if (remaining.isEmpty || remaining.tail.isEmpty) true
+      else if (ordering.lteq(remaining.head, remaining.tail.head)) isSortedRec(remaining.tail)
+      else false
     }
+
+    isSortedRec(this)
   }
 }
 
@@ -397,16 +452,21 @@ object ListProblems extends App {
   test(3 :: 1 :: 4 :: 2 :: RNil)
   test(3 :: 1 :: 4 :: 2 :: 0 :: RNil)
   test(2 :: RNil)
+  test(3 :: 1 :: 1 :: 1 :: 4 :: RNil)
   test(RList.from(Range.inclusive(1, 10000)))
   test(RList.from(Range.inclusive(10000, 1, -1)))
+  val r = new Random(System.currentTimeMillis())
+  test(RList.from(Range.inclusive(1, 10000).map(_ => r.nextInt(100000))))
 
   private def test(aList: RList[Int]) = {
     val startTime = System.currentTimeMillis()
     val aListSorted = aList.quickSort(Ordering[Int])
     val duration = System.currentTimeMillis() - startTime
+    val isSorted: Boolean = aListSorted.isSorted(Ordering[Int])
     println("#######")
     println("initial = " + aList)
     println("sorted = " + aListSorted)
+    println("is sorted = " + isSorted)
     println(s"duration = $duration ms ")
   }
 }
