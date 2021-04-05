@@ -52,17 +52,46 @@ object NumberProblems extends App {
     }
   }
 
-  private def testIsPrime(numbers: List[Int]) = {
-    println("  n - isPrime(n) - isPrimeSieveOfEratosthenes(n)")
-    numbers.foreach(n => {
-      val v1 = isPrime(n)
-      val v2 = isPrimeSieveOfEratosthenes(n)
-      println(f"$n%3d - $v1%5b - $v2%5b ->" + (if (v1 == v2) "OK" else "NOK"))
-    })
-    println()
+  /*
+  Complexity: O(sqrt(N)) worse case when it is a prime
+   */
+  def decompose(n: Int): List[Int] = {
+    assert(n >= 0)
+
+    @tailrec
+    def decomposeRec(n: Int, k: Int, result: List[Int]): List[Int] = {
+      if (k > Math.sqrt(Math.abs(n)).intValue()) n :: result
+      else if (n % k == 0) decomposeRec(n / k, k, k :: result)
+      else decomposeRec(n, k + 1, result)
+    }
+
+    decomposeRec(n, 2, Nil)
   }
 
-  testIsPrime(List.from(-100 to 100))
-  testIsPrime(List(2,15,2003,2731189,517935872,1,0,-2003))
 
+  private def testPrime = {
+    def checkPrimeNumbers(numbers: List[Int]) = {
+      println("  n - isPrime(n) - isPrimeSieveOfEratosthenes(n)")
+      numbers.foreach(n => {
+        val v1 = isPrime(n)
+        val v2 = isPrimeSieveOfEratosthenes(n)
+        println(f"$n%3d - $v1%5b - $v2%5b ->" + (if (v1 == v2) "OK" else "NOK"))
+      })
+      println()
+    }
+
+    checkPrimeNumbers(List.from(-100 to 100))
+    checkPrimeNumbers(List(2, 15, 2003, 2731189, 517935872, 1, 0, -2003))
+  }
+
+  private def testDecompose = {
+    println(decompose(1))
+    println(decompose(2))
+    println(decompose(13))
+    println(decompose(87))
+    println(decompose(3 * 3 * 5 * 7 * 23 * 3 * 29))
+  }
+
+  testDecompose
 }
+
