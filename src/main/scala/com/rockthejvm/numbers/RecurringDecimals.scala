@@ -7,21 +7,21 @@ object RecurringDecimals extends App {
 
   case class DivisionResult(quotient: Byte, remainder: Int)
 
-  import scala.collection.mutable.{Map => MMap}
+  import scala.collection.mutable.{Set => MSet}
 
   class ResultIndex() {
-    val map = MMap[Byte, MMap[Int, DivisionResult]]()
-    (0 to 9).foreach(d => map.put(d.toByte, MMap[Int, DivisionResult]()))
+    val index : Array[MSet[Int]] = new Array[MSet[Int]](10)
+    (0 to 9).foreach(d => index(d) =  MSet[Int]())
 
     def add(divisionResult: DivisionResult): Unit = {
-      val quotientMap = map.get(divisionResult.quotient).getOrElse(MMap[Int, DivisionResult]())
-      if (quotientMap.isEmpty) map.put(divisionResult.quotient, quotientMap)
-      quotientMap.put(divisionResult.remainder, divisionResult)
+      val quotientMap = index(divisionResult.quotient)
+      quotientMap.add(divisionResult.remainder)
     }
 
     def find(divisionResult: DivisionResult): Option[DivisionResult] = {
-      map.get(divisionResult.quotient).flatMap(quotientMap =>
-        quotientMap.get(divisionResult.remainder))
+      if(index(divisionResult.quotient).contains(divisionResult.remainder))
+        Some(divisionResult)
+      else None
     }
   }
 
@@ -100,6 +100,6 @@ object RecurringDecimals extends App {
   println("1/16127=" + fractionToRecurringDecimals(1, 16127))
   println("1/1046527=" + fractionToRecurringDecimals(1, 1046527))
   println("1/6700417=" + fractionToRecurringDecimals(1, 6700417))
-  println("1/Int.MaxValue>>2=" + fractionToRecurringDecimals(1, Int.MaxValue>>2))
+  //println("1/Int.MaxValue=" + fractionToRecurringDecimals(1, Int.MaxValue))
 
 }
