@@ -15,7 +15,7 @@ object RecurringDecimals extends App {
 
     def add(divisionResult: DivisionResult): Unit = {
       val quotientMap = map.get(divisionResult.quotient).getOrElse(MMap[Int, DivisionResult]())
-      if(quotientMap.isEmpty) map.put(divisionResult.quotient, quotientMap)
+      if (quotientMap.isEmpty) map.put(divisionResult.quotient, quotientMap)
       quotientMap.put(divisionResult.remainder, divisionResult)
     }
 
@@ -26,14 +26,14 @@ object RecurringDecimals extends App {
   }
 
   @tailrec
-  def findDecimals(numerator: Int, denominator: Int, results: List[DivisionResult], resultIndex: ResultIndex): (List[DivisionResult], Option[DivisionResult]) = {
-    val quotient = (numerator / denominator).toByte
+  def findDecimals(numerator: Long, denominator: Long, results: List[DivisionResult], resultIndex: ResultIndex): (List[DivisionResult], Option[DivisionResult]) = {
+    val quotient = numerator / denominator
     val remainder = numerator % denominator
-    val result = DivisionResult(quotient, remainder)
+    val result = DivisionResult(quotient.toByte, remainder.toInt)
     if (remainder == 0) {
       ((result :: results).reverse, None)
     } else {
-      val maybeResult =  resultIndex.find(result) //results.find(_.equals(result))
+      val maybeResult = resultIndex.find(result) //results.find(_.equals(result))
       if (maybeResult.isDefined) {
         (results.reverse, maybeResult)
       } else {
@@ -43,29 +43,47 @@ object RecurringDecimals extends App {
     }
   }
 
-  def fractionToRecurringDecimals(numerator: Int, denominator: Int): String = {
-    val stringBuilder = new StringBuilder()
+  case class ResultBuilder(sb: StringBuilder, var totalCounter: Long, var recCounter: Long)
+
+  def fractionToRecurringDecimals(numerator: Long, denominator: Long): String = {
+    val resultBuilder = ResultBuilder(new StringBuilder(), 0, -1)
+
     if (numerator < 0 && denominator > 0 || numerator > 0 && denominator < 0) {
-      stringBuilder.append("-")
+      resultBuilder.sb.append("-")
     }
     val quotient = Math.abs(numerator / denominator)
     val remainder = Math.abs(numerator % denominator)
     val (decimals, maybeFirstRecurringDivisionResult) = findDecimals(remainder * 10, Math.abs(denominator), Nil, new ResultIndex())
-    stringBuilder.append(quotient)
-    if (remainder != 0) stringBuilder.append(".")
+    resultBuilder.sb.append(quotient)
+    if (remainder != 0) resultBuilder.sb.append(".")
+
+    def appendQuotient(rb: ResultBuilder, divisionResult: DivisionResult) = {
+      if (rb.totalCounter <= 100) rb.sb.append(divisionResult.quotient)
+      else if (rb.totalCounter == 101) rb.sb.append("...")
+    }
+
     maybeFirstRecurringDivisionResult match {
       case Some(firstRecurringDivisionResult) => {
-        decimals.foldLeft(stringBuilder)((sb: StringBuilder, divisionResult: DivisionResult) => {
-          if (divisionResult.equals(firstRecurringDivisionResult)) sb.append("(")
-          sb.append(divisionResult.quotient)
-        }).append(")")
+        decimals.foldLeft(resultBuilder)((rb: ResultBuilder, divisionResult: DivisionResult) => {
+          if (divisionResult.equals(firstRecurringDivisionResult)) {
+            rb.sb.append("(")
+            rb.recCounter = 0
+          }
+          rb.totalCounter += 1
+          if (rb.recCounter >= 0) rb.recCounter += 1
+          appendQuotient(rb, divisionResult)
+          rb
+        })
+        resultBuilder.sb.append(")")
       }
-      case None => decimals.foldLeft(stringBuilder)((sb: StringBuilder, divisionResult: DivisionResult) => {
-        sb.append(divisionResult.quotient)
+      case None => decimals.foldLeft(resultBuilder)((rb: ResultBuilder, divisionResult: DivisionResult) => {
+        rb.totalCounter += 1
+        appendQuotient(rb, divisionResult)
+        rb
       })
     }
-    if(stringBuilder.length() > 100) s"{... ${stringBuilder.length()} digits ...}"
-    else stringBuilder.toString()
+    if (resultBuilder.totalCounter > 100) resultBuilder.sb.append(s" | total = ${resultBuilder.totalCounter} | recurring = ${resultBuilder.recCounter}")
+    resultBuilder.sb.toString()
   }
 
   println("1/5=" + fractionToRecurringDecimals(1, 5))
@@ -76,11 +94,12 @@ object RecurringDecimals extends App {
   println("1/7=" + fractionToRecurringDecimals(1, 7))
   println("1/2003=" + fractionToRecurringDecimals(1, 2003))
   println("-1/2=" + fractionToRecurringDecimals(-1, 2))
-  println("1/Int.MinValue>>4=" + fractionToRecurringDecimals(1, Int.MinValue>>4))
+  println("1/Int.MinValue=" + fractionToRecurringDecimals(1, Int.MinValue))
   println("1/1987=" + fractionToRecurringDecimals(1, 1987))
   println("1/7919=" + fractionToRecurringDecimals(1, 7919))
   println("1/16127=" + fractionToRecurringDecimals(1, 16127))
   println("1/1046527=" + fractionToRecurringDecimals(1, 1046527))
-  println("1/Int.MaxValue>>4=" + fractionToRecurringDecimals(1, Int.MaxValue>>4))
+  println("1/6700417=" + fractionToRecurringDecimals(1, 6700417))
+  println("1/Int.MaxValue>>2=" + fractionToRecurringDecimals(1, Int.MaxValue>>2))
 
 }
