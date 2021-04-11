@@ -11,22 +11,28 @@ object Duplicates extends App {
   def duplicates(list: List[Int]): Int = {
     // Complexity: runtime O(N) , space O(N)
     @tailrec
-    def findSingle(remaining: List[Int], occurrences: Map[Int, Int]): Int = {
-      if (remaining.isEmpty) occurrences.find { case (k, v) => v == 1 }.get._1
+    def findSingle(remaining: List[Int], occurrences: Set[Int]): Int = {
+      if (remaining.isEmpty) occurrences.head
       else {
-        findSingle(remaining.tail, occurrences.updatedWith(remaining.head)(optionalValue => optionalValue.map(_ + 1).orElse(Some(1))))
+        val newOccurrences = if (occurrences.contains(remaining.head)) occurrences - remaining.head
+        else occurrences + remaining.head
+        findSingle(remaining.tail, newOccurrences)
       }
     }
 
-    findSingle(list, Map[Int, Int]())
+    findSingle(list, Set[Int]())
   }
 
 
   def test(list: List[Int]) = {
-    println(s"duplicates(${list}) = " + duplicates(list))
+    println(s"duplicates(" +
+      s"${list.take(20)}" +
+      s"${if(list.length>20) "..."}) = " + duplicates(list))
   }
 
   test(List(1))
   test(List(1,2,1))
   test(List(1,2,3,2,1,4,5,5,4))
+  private val list: List[Int] = (1 to 10000).toList
+  test(list ++ List(53465534) ++ list)
 }
