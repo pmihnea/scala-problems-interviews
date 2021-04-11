@@ -22,34 +22,16 @@ object UglyNumber extends App {
   def nthUgly(index: Int): Int = {
 
     @tailrec
-    def nthUglyRec(result: List[Int], counter: Int): Int = {
-      if (counter == index) result.head // max element found
-      else nthUglyRec(findNextLowerBoundedMin(result, result.head, Int.MaxValue) :: result, counter + 1)
-    }
-
-    /*
-    fN([3,2,1], 3, MaxValue] -> {min(MaxValue, 3*2 > 3, 3*3 > 3, 3*5 > 3)=6}
-    = fN([2,1], 3, 6) -> {min(6, 2*2 > 3, 2*3 > 3, 2*5 > 3)=4}
-    = fN([1], 3, 4) -> {min(4, 1*2 <= 3, 1*2 <= 3, 1*5 > 5)=4
-    = fN([], 3, 4) = 4
-     */
-    @tailrec
-    def findNextLowerBoundedMin(remaining: List[Int], lowerBound: Int, currentMin: Int): Int = {
-      if (remaining.isEmpty) currentMin
-      else {
-        val last = remaining.head
-        val p2 = last * 2
-        val p3 = last * 3
-        val p5 = last * 5
-        val n2 = if (p2 > lowerBound) p2 else currentMin
-        val n3 = if (p3 > lowerBound) p3 else currentMin
-        val n5 = if (p5 > lowerBound) p5 else currentMin
-        val nextMin = Math.min(Math.min(currentMin, n2), Math.min(n3, n5))
-        findNextLowerBoundedMin(remaining.tail, lowerBound, nextMin)
+    def nthUglyRec(number: Int, counter: Int): Int = {
+      if (uglyNumber(number)) {
+        if (counter == index) number
+        else nthUglyRec(number + 1, counter + 1)
+      } else {
+        nthUglyRec(number + 1, counter)
       }
     }
 
-    nthUglyRec(List(1), 1)
+    nthUglyRec(1, 1)
   }
 
   def test(number: Int) = {
@@ -65,6 +47,7 @@ object UglyNumber extends App {
   println(uglyNumber(2 * 3 * 5))
   println(uglyNumber(2 * 2 * 3 * 2 * 5 * 5))
   println(uglyNumber(2 * 3 * 5 * 7))
+  println(uglyNumber(16200))
 
   def testNth(index: Int) = {
     println(s"nthUglyNumber($index) = ${
@@ -94,6 +77,6 @@ object UglyNumber extends App {
   testNth(20)
 
   testNth(200)
-  testNth(2000)
+  testNth(1600)
 
 }
