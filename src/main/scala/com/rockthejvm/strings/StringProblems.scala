@@ -18,15 +18,8 @@ object StringProblems extends App {
   }
 
   def checkAnagrams(sa: String, so: String): Boolean = {
-    val saCounters = countCharacters(sa)
-    val finalCounters = so.foldLeft(saCounters)((m, c) => m.updatedWith(c)(maybeCounter => {
-      maybeCounter match {
-        case None => Some(-1)
-        case Some(1) => None
-        case Some(i) => Some(i - 1)
-      }
-    }))
-    finalCounters.isEmpty
+    //countCharacters(sa) == countCharacters(so)
+    sa.sorted == so.sorted
   }
 
   def testCheckAnagrams(sa: String, so: String) = {
