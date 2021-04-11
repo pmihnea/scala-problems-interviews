@@ -1,7 +1,5 @@
 package com.rockthejvm.numbers
 
-import scala.annotation.tailrec
-
 object Duplicates extends App {
   //all numbers appear exactly twice, except one, find that one
 
@@ -9,25 +7,15 @@ object Duplicates extends App {
   [1,2,1,2,4,7,5,6,5,4,6]
    */
   def duplicates(list: List[Int]): Int = {
-    // Complexity: runtime O(N) , space O(N)
-    @tailrec
-    def findSingle(remaining: List[Int], occurrences: Set[Int]): Int = {
-      if (remaining.isEmpty) occurrences.head
-      else {
-        val newOccurrences = if (occurrences.contains(remaining.head)) occurrences - remaining.head
-        else occurrences + remaining.head
-        findSingle(remaining.tail, newOccurrences)
-      }
-    }
-
-    findSingle(list, Set[Int]())
+    // Complexity: runtime O(N) , space O(1)
+    list.foldLeft(0)(_^_)
   }
 
 
   def test(list: List[Int]) = {
     println(s"duplicates(" +
       s"${list.take(20)}" +
-      s"${if(list.length>20) "..."}) = " + duplicates(list))
+      s"${if(list.length>20) "..." else ""}) = " + duplicates(list))
   }
 
   test(List(1))
