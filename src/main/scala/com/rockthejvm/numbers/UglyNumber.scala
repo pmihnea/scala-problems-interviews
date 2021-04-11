@@ -21,51 +21,36 @@ object UglyNumber extends App {
   // 1 is the first ugly number
   def nthUgly(index: Int): Int = {
 
+    @tailrec
+    def nthUglyRec(result: List[Int], counter: Int): Int = {
+      if (counter == index) result.head // max element found
+      else nthUglyRec(findNextLowerBoundedMin(result, result.head, Int.MaxValue) :: result, counter + 1)
+    }
+
     /*
-    ascList(7 , [1,3,8], []) =
-    = ascL(7 , [3,8], [1]) =
-    = ascL(7, [8] ,[3,1]) = concatReverse([7,3,1], [8]) = [1,3,7,8]
+    fN([3,2,1], 3, MaxValue] -> {min(MaxValue, 3*2 > 3, 3*3 > 3, 3*5 > 3)=6}
+    = fN([2,1], 3, 6) -> {min(6, 2*2 > 3, 2*3 > 3, 2*5 > 3)=4}
+    = fN([1], 3, 4) -> {min(4, 1*2 <= 3, 1*2 <= 3, 1*5 > 5)=4
+    = fN([], 3, 4) = 4
      */
     @tailrec
-    def ascendingList(n: Int, remaining: List[Int], acc: List[Int]): List[Int] = {
-      if (remaining.isEmpty) (n :: acc).reverse
-      else if (remaining.head < n) ascendingList(n, remaining.tail, remaining.head :: acc)
-      else if (remaining.head == n) concatReverse(acc, remaining) // remove duplicates
-      else concatReverse(n :: acc, remaining)
-    }
-
-    @tailrec
-    def multiply(remaining: List[Int], acc: List[Int]): List[Int] = {
-      if (remaining.isEmpty) acc
+    def findNextLowerBoundedMin(remaining: List[Int], lowerBound: Int, currentMin: Int): Int = {
+      if (remaining.isEmpty) currentMin
       else {
-        val h = ascendingList(remaining.head, acc, Nil)
-        val m2 = if(2 * remaining.head >0) ascendingList(2 * remaining.head, h, Nil) else h
-        val m3 = if(3 * remaining.head> 0 ) ascendingList(3 * remaining.head, m2, Nil) else m2
-        val m5 = if(5 * remaining.head > 0) ascendingList(5 * remaining.head, m3, Nil) else m3
-        multiply(remaining.tail, m5)
+        val last = remaining.head
+        val p2 = last * 2
+        val p3 = last * 3
+        val p5 = last * 5
+        val n2 = if (p2 > lowerBound) p2 else currentMin
+        val n3 = if (p3 > lowerBound) p3 else currentMin
+        val n5 = if (p5 > lowerBound) p5 else currentMin
+        val nextMin = Math.min(Math.min(currentMin, n2), Math.min(n3, n5))
+        findNextLowerBoundedMin(remaining.tail, lowerBound, nextMin)
       }
     }
 
-    @tailrec
-    def concatReverse[T](remaining: List[T], acc: List[T]): List[T] = {
-      if (remaining.isEmpty) acc
-      else concatReverse(remaining.tail, remaining.head :: acc)
-    }
-
-    @tailrec
-    def nthUglyRec(counter: Int, acc: List[Int]): Int =
-      if (counter == index) {
-        acc.drop(index - 1).head
-      } else {
-        // 2^a * 3^b * 5^c
-        // {2,3,5}
-        // {2,3,5} :: {2*2,3*2,5*2} :: {2*3,3*3,5*3} :: {2*5,3*5,5*5}
-        nthUglyRec(counter + 1, multiply(acc, Nil))
-      }
-
-    nthUglyRec(1, List(1))
+    nthUglyRec(List(1), 1)
   }
-
 
   def test(number: Int) = {
     println(s"uglyNumber($number) = ${
@@ -82,7 +67,8 @@ object UglyNumber extends App {
   println(uglyNumber(2 * 3 * 5 * 7))
 
   def testNth(index: Int) = {
-    println(s"nthUglyNumber($index) = ${nthUgly(index)
+    println(s"nthUglyNumber($index) = ${
+      nthUgly(index)
     }")
   }
 
@@ -106,4 +92,8 @@ object UglyNumber extends App {
   testNth(18)
   testNth(19)
   testNth(20)
+
+  testNth(200)
+  testNth(2000)
+
 }
