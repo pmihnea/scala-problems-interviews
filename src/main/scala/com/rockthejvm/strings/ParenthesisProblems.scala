@@ -8,17 +8,17 @@ object ParenthesisProblems extends App{
   def hasValidParentheses(string: String): Boolean = {
     val OPEN = '('
     val CLOSE = ')'
-    def checkRec(index: Int, stack: List[Int]) :Boolean= {
-      if(index == string.length) stack.isEmpty
+    def checkRec(index: Int, openParenthesis: Int) :Boolean= {
+      if(index == string.length) openParenthesis == 0
       else {
-        if (string.charAt(index) == OPEN) checkRec(index + 1, OPEN :: stack)
+        if (string.charAt(index) == OPEN) checkRec(index + 1, openParenthesis + 1)
         else if (string.charAt(index) == CLOSE) {
-          if(stack.isEmpty || stack.head != OPEN) false
-          else checkRec(index+1, stack.tail)
-        } else checkRec(index+1, stack)
+          if(openParenthesis == 0) false
+          else checkRec(index+1, openParenthesis - 1)
+        } else checkRec(index+1, openParenthesis) // ignore other chars
       }
     }
-    checkRec(0, Nil)
+    checkRec(0, 0)
   }
 
   def testValidParentheses = {
