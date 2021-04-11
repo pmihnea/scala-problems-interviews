@@ -47,12 +47,13 @@ object ParenthesisProblems extends App {
       if (nRemainingParens == 0) currentStrings
       else if (currentStrings.isEmpty) genParensRec(nRemainingParens - 1, Set(OPEN_CLOSE))
       else {
-        val newStrings: Set[String] = currentStrings.flatMap(current =>
-          (0 to current.length).map(i => {
-            val split = current.splitAt(i)
-            split._1 + OPEN_CLOSE + split._2
-          }).toSet)
-
+        val newStrings = for {
+          current <- currentStrings
+          index <- 0 to current.length
+        } yield {
+          val (before, after) = current.splitAt(index)
+          before + OPEN_CLOSE + after
+        }
         genParensRec(nRemainingParens - 1, newStrings)
       }
     }
@@ -61,11 +62,21 @@ object ParenthesisProblems extends App {
   }
 
   def testGenerateAllValidParentheses = {
-    println(generateAllValidParentheses(0).sorted.mkString(", "))
-    println(generateAllValidParentheses(1).sorted.mkString(", "))
-    println(generateAllValidParentheses(2).sorted.mkString(", "))
-    println(generateAllValidParentheses(3).sorted.mkString(", "))
-    println(generateAllValidParentheses(4).sorted.mkString(", "))
+    def printTest(n: Int) = {
+      val list = generateAllValidParentheses(n)
+      println(s"$n -> ${list.length} = " + list.sorted.hashCode())
+    }
+    printTest(0)
+    printTest(1)
+    printTest(2)
+    printTest(3)
+    printTest(4)
+    printTest(5)
+    printTest(6)
+    printTest(7)
+    printTest(8)
+    printTest(9)
+    printTest(10)
   }
 
   testGenerateAllValidParentheses
