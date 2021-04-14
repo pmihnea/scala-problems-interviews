@@ -19,6 +19,12 @@ sealed abstract class BTree[+T] {
   def collectLeaves: List[BTree[T]]
 
   def leafCount: Int
+
+  /*
+  Medium
+   */
+  // the number of nodes in the tree
+  def size: Int
 }
 
 case object BEnd extends BTree[Nothing] {
@@ -30,6 +36,8 @@ case object BEnd extends BTree[Nothing] {
   override def isLeaf: Boolean = false
   override def collectLeaves: List[BTree[Nothing]] = List()
   override def leafCount: Int = 0
+
+  override val size: Int = 0
 }
 
 case class BNode[+T](override val value: T, override val left: BTree[T], override val right: BTree[T]) extends BTree[T] {
@@ -63,6 +71,23 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
   }
 
   override def leafCount: Int = collectLeaves.length
+
+  override val size: Int = 1 + left.size + right.size
+/*
+  override def size: Int = {
+    @tailrec
+    def sizeTailRec(remaining: List[BTree[T]], result: Int) : Int = {
+      if(remaining.isEmpty) result
+      else if(remaining.head.isEmpty) sizeTailRec(remaining.tail, result)
+      else if(remaining.head.isLeaf) sizeTailRec(remaining.tail, result + 1)
+      else {
+        val node = remaining.head
+        sizeTailRec(node.left :: node.right :: remaining.tail, result + 1)
+      }
+    }
+    sizeTailRec(List(this), 0)
+  }
+*/
 }
 
 object BinaryTreeProblems extends App {
@@ -79,4 +104,5 @@ object BinaryTreeProblems extends App {
 
   println(tree3.collectLeaves)
   println(tree3.leafCount)
+  println(tree3.size)
 }
