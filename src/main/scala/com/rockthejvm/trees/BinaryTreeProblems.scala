@@ -11,7 +11,7 @@ sealed abstract class BTree[+T] {
 
   def isEmpty: Boolean
 
-  val optionValue: Option[T] = if(isEmpty) None else Some(value)
+  val optionValue: Option[T] = if (isEmpty) None else Some(value)
 
   /*
   Easy problems
@@ -141,68 +141,21 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
         else BNode(this.value, this.right.mirror, this.left.mirror)*/
 
   override def mirror: BTree[T] = {
-    // [a,E,E] -> this
-    // [a,b,c] -> [a,c,b]
-    case class Frame[+T](root: BTree[T], left: Option[BTree[T]] = Option.empty, result: Option[BTree[T]] = Option.empty)
-
-    def unwindStack(result: BTree[T], stack: List[Frame[T]]): List[Frame[T]] = {
-      assert(stack.nonEmpty)
-      //unwind the stack and place the new result
-      val newFrameWithResult = stack.head.copy(result = Some(result))
-      newFrameWithResult :: stack.tail
-    }
-
-    /*
-    Complexity: runtime O(N), space O(N)
-     */
     @tailrec
-    def mirrorTailRec(stack: List[Frame[T]] = List()): BTree[T] = {
-      assert(stack.nonEmpty)
-
-      val frame = stack.head
-      val newStack = stack.tail
-
-      if (frame.result.isDefined) {
-        // after stack unwinding
-        // use the result in the current frame
-        if (!frame.left.isDefined) {
-          // use the result as left in the current frame
-          val newFrameWithLeft = frame.copy(left = frame.result, result = None)
-          mirrorTailRec(newFrameWithLeft :: newStack)
+    def mirrorTailRec(todo: List[BTree[T]], visited: Set[Int], done: List[BTree[T]]): BTree[T] = {
+      if (todo.isEmpty) done.head
+      else {
+        if (todo.head.isEmpty || todo.head.isLeaf) {
+          mirrorTailRec(todo.tail, visited, todo.head :: done)
+        } else if (!visited(System.identityHashCode(todo.head))) {
+          mirrorTailRec(todo.head.left :: todo.head.right :: todo, visited + System.identityHashCode(todo.head), done)
         } else {
-          // use result as right in the current frame
-          // create a node as a new result
-          val newResult = BNode(frame.root.value, frame.left.get, frame.result.get)
-          if (newStack.isEmpty) newResult // final result
-          else {
-            //unwind the stack and place the new result
-            mirrorTailRec(unwindStack(newResult, newStack))
-          }
-        }
-      } else {
-        // no result so no stack unwinding
-        if (frame.root.isEmpty || frame.root.isLeaf) {
-          // finish the node
-          val newResult = frame.root
-          //unwindStack(newResult, newStack)
-          if (newStack.isEmpty) newResult // final result
-          else {
-            //unwind the stack and place the new result
-            mirrorTailRec(unwindStack(newResult, newStack))
-          }
-        } else if (!frame.left.isDefined) {
-          // calculate left as right.mirror
-          // add to the stack the right as root to be calculated
-          mirrorTailRec(Frame(root = frame.root.right) :: stack)
-        } else {
-          // calculate right as left.mirror
-          // add to the stack the left as root to be calculated
-          mirrorTailRec(Frame(root = frame.root.left) :: stack)
+          val newDone = BNode(todo.head.value, done.head, done.tail.head) :: done.tail.tail //left swaps here with right
+          mirrorTailRec(todo.tail, visited, newDone)
         }
       }
     }
-
-    mirrorTailRec(List(Frame(root = this)))
+    mirrorTailRec(List(this), Set(), List())
   }
 }
 
