@@ -11,6 +11,8 @@ sealed abstract class BTree[+T] {
 
   def isEmpty: Boolean
 
+  val optionValue: Option[T] = if(isEmpty) None else Some(value)
+
   /*
   Easy problems
   */
@@ -27,6 +29,8 @@ sealed abstract class BTree[+T] {
   def size: Int
 
   def collectNodes(level: Int): List[BTree[T]]
+
+  def mirror: BTree[T]
 }
 
 case object BEnd extends BTree[Nothing] {
@@ -47,6 +51,8 @@ case object BEnd extends BTree[Nothing] {
   override val size: Int = 0
 
   override def collectNodes(level: Int): List[BTree[Nothing]] = List()
+
+  override def mirror: BTree[Nothing] = this
 }
 
 case class BNode[+T](override val value: T, override val left: BTree[T], override val right: BTree[T]) extends BTree[T] {
@@ -129,6 +135,75 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
     //else collectTailRecDFS(List((this, 0)), List())
     else collectTailRecBFS(0, List(this))
   }
+
+  /*  override def mirror: BTree[T] =
+        if(isLeaf) this
+        else BNode(this.value, this.right.mirror, this.left.mirror)*/
+
+  override def mirror: BTree[T] = {
+    // [a,E,E] -> this
+    // [a,b,c] -> [a,c,b]
+    case class Frame[+T](root: BTree[T], left: Option[BTree[T]] = Option.empty, result: Option[BTree[T]] = Option.empty)
+
+    def unwindStack(result: BTree[T], stack: List[Frame[T]]): List[Frame[T]] = {
+      assert(stack.nonEmpty)
+      //unwind the stack and place the new result
+      val newFrameWithResult = stack.head.copy(result = Some(result))
+      newFrameWithResult :: stack.tail
+    }
+
+    /*
+    Complexity: runtime O(N), space O(N)
+     */
+    @tailrec
+    def mirrorTailRec(stack: List[Frame[T]] = List()): BTree[T] = {
+      assert(stack.nonEmpty)
+
+      val frame = stack.head
+      val newStack = stack.tail
+
+      if (frame.result.isDefined) {
+        // after stack unwinding
+        // use the result in the current frame
+        if (!frame.left.isDefined) {
+          // use the result as left in the current frame
+          val newFrameWithLeft = frame.copy(left = frame.result, result = None)
+          mirrorTailRec(newFrameWithLeft :: newStack)
+        } else {
+          // use result as right in the current frame
+          // create a node as a new result
+          val newResult = BNode(frame.root.value, frame.left.get, frame.result.get)
+          if (newStack.isEmpty) newResult // final result
+          else {
+            //unwind the stack and place the new result
+            mirrorTailRec(unwindStack(newResult, newStack))
+          }
+        }
+      } else {
+        // no result so no stack unwinding
+        if (frame.root.isEmpty || frame.root.isLeaf) {
+          // finish the node
+          val newResult = frame.root
+          //unwindStack(newResult, newStack)
+          if (newStack.isEmpty) newResult // final result
+          else {
+            //unwind the stack and place the new result
+            mirrorTailRec(unwindStack(newResult, newStack))
+          }
+        } else if (!frame.left.isDefined) {
+          // calculate left as right.mirror
+          // add to the stack the right as root to be calculated
+          mirrorTailRec(Frame(root = frame.root.right) :: stack)
+        } else {
+          // calculate right as left.mirror
+          // add to the stack the left as root to be calculated
+          mirrorTailRec(Frame(root = frame.root.left) :: stack)
+        }
+      }
+    }
+
+    mirrorTailRec(List(Frame(root = this)))
+  }
 }
 
 object BinaryTreeProblems extends App {
@@ -161,13 +236,27 @@ object BinaryTreeProblems extends App {
 
   val tree3 = BNode(7, tree1, tree2)
 
+  println("collectLeaves :")
   println(tree3.collectLeaves)
+  println("leafCount :")
   println(tree3.leafCount)
+  println("size :")
   println(tree3.size)
+
   println("collectNodes :")
   println(tree3.collectNodes(0).map(_.value)) //7
   println(tree3.collectNodes(1).map(_.value)) //4,1
   println(tree3.collectNodes(2).map(_.value)) //2,3,5,6
   println(tree3.collectNodes(3).map(_.value)) //8
   println(tree3.collectNodes(4).map(_.value)) //9
+
+  println("mirror :")
+  println(tree1.mirror)
+  println(tree2.mirror)
+  println(tree3.mirror)
+  println(tree3.mirror)
+  private val bigTree = (1 to 10000).foldLeft[BTree[Int]](BEnd) { case (child, value) => BNode(value, child, BEnd) }
+  private val bigTreeMirrored: BTree[Int] = bigTree.mirror
+  println(bigTree.optionValue, bigTree.left.optionValue, bigTree.right.optionValue)
+  println(bigTreeMirrored.optionValue, bigTreeMirrored.left.optionValue, bigTreeMirrored.right.optionValue)
 }
