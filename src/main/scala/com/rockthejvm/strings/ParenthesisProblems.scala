@@ -11,6 +11,7 @@ object ParenthesisProblems extends App {
     val OPEN = '('
     val CLOSE = ')'
 
+    @tailrec
     def checkRec(index: Int, openParenthesis: Int): Boolean = {
       if (index == string.length) openParenthesis == 0
       else {
@@ -27,7 +28,7 @@ object ParenthesisProblems extends App {
 
   private val OPEN_CLOSE = "()"
 
-  def testValidParentheses = {
+  def testValidParentheses(): Unit = {
     println(hasValidParentheses(OPEN_CLOSE)) //true
     println(hasValidParentheses(OPEN_CLOSE + OPEN_CLOSE)) //true
     println(hasValidParentheses("(" + OPEN_CLOSE + ")")) //true
@@ -45,7 +46,9 @@ object ParenthesisProblems extends App {
     @tailrec
     def genParensRec(nRemainingParens: Int, currentStrings: Set[String]): Set[String] = {
       if (nRemainingParens == 0) currentStrings
-      else if (currentStrings.isEmpty) genParensRec(nRemainingParens - 1, Set(OPEN_CLOSE))
+      else if (currentStrings.isEmpty) {
+        genParensRec(nRemainingParens - 1, Set(OPEN_CLOSE))
+      }
       else {
         val newStrings = for {
           current <- currentStrings
@@ -61,8 +64,8 @@ object ParenthesisProblems extends App {
     genParensRec(n, Set[String]()).toList
   }
 
-  def testGenerateAllValidParentheses = {
-    def printTest(n: Int) = {
+  def testGenerateAllValidParentheses(): Unit = {
+    def printTest(n: Int): Unit = {
       val list = generateAllValidParentheses(n)
       println(s"$n -> ${list.length} = " + list.sorted.hashCode())
     }
@@ -79,5 +82,5 @@ object ParenthesisProblems extends App {
     printTest(10)
   }
 
-  testGenerateAllValidParentheses
+  testGenerateAllValidParentheses()
 }
